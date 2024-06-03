@@ -1,0 +1,47 @@
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.net.HttpURLConnection;
+import java.net.URL;
+import org.json.simple.JSONObject;
+import org.json.simple.parser.JSONParser;
+import org.json.simple.parser.ParseException;
+
+public class ConversorDeMoeda {
+
+    private static final String API_URL = "https://api.exchangerate-api.com/v4/latest/";
+
+    public static void main(String[] args) {
+        ConversorDeMoeda conversor = new ConversorDeMoeda();
+        double valorConvertido = conversor.converterMoeda("USD", "EUR", 100.0);
+        System.out.println("100 USD equivale a aproximadamente " + valorConvertido + " EUR.");
+    }
+
+    public double converterMoeda(String moedaOrigem, String moedaDestino, double valor) {
+        try {
+            URL url = new URL(API_URL + moedaOrigem);
+            HttpURLConnection con = (HttpURLConnection) url.openConnection();
+            con.setRequestMethod("GET");
+
+            int responseCode = con.getResponseCode();
+            if (responseCode == HttpURLConnection.HTTP_OK) {
+                BufferedReader in = new BufferedReader(new InputStreamReader(con.getInputStream()));
+                String response = in.readLine();
+                in.close();
+
+                JSONParser parser = new JSONParser();
+                JSONObject json = (JSONObject) parser.parse(response);
+                JSONObject rates = (JSONObject) json.get("rates");
+                
+                double taxaOrigem = (double) rates.get(moedaDestino);
+                return valor * taxaOrigem;
+            } else {
+                System.out.println("Erro ao obter taxas de câmbio: " + responseCode);
+                return -1;
+            }
+        } catch (IOException | ParseException e) {
+            e.printStackTrace();
+            return -1;
+        }
+    }
+}
